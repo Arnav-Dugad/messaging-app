@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Messaging App</title>
+
+    <!-- Font Awesome 6.0.0 for icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    />
+
+    <style>
+        /* ============================================================
+           GLOBAL RESETS & CSS VARIABLES
+           ============================================================ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Brand colours – green theme with dark‑gray background */
+            --primary: #00a884;
+            --primary-dark: #008f6f;
+            --bg-dark: #111b21;
+            --bg-darker: #0b141a;
+            --bg-panel: #202c33;
+            --bg-input: #2a3942;
+            --text-primary: #e9edef;
+            --text-secondary: #8696a0;
+            --border-color: #313d45;
+            --msg-outgoing: #005c4b;
+            --msg-incoming: #202c33;
+            --danger: #ef4444;
+            --font-stack: "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font-stack);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* Utility: hide elements */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* ============================================================
+           AUTH SCREEN (Login / Sign‑up)
+           ============================================================ */
+        #auth-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background: var(--bg-darker);
+        }
+
+        .auth-container {
+            background: var(--bg-panel);
+            padding: 40px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .auth-container h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .auth-container .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+            font-size: 0.9rem;
+        }
+
+        .auth-container .form-group {
+            margin-bottom: 18px;
+        }
+
+        .auth-container label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-container input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .auth-container input:focus {
+            border-color: var(--primary);
+        }
+
+        .auth-container .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-container .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .auth-container .toggle-text {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-container .toggle-text a {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .auth-container .auth-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* ============================================================
+           DASHBOARD (Main App)
+           ============================================================ */
+        #dashboard-screen {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+
+        /* ---- Sidebar (User / Conversation List) ---- */
+        .sidebar {
+            width: 30%;
+            min-width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-header .user-info .avatar-sm {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.85rem;
+        }
+
+        .sidebar-header .header-actions button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-left: 14px;
+            transition: color 0.2s;
+        }
+
+        .sidebar-header .header-actions button:hover {
+            color: var(--text-primary);
+        }
+
+        /* Search bar */
+        .sidebar-search {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 8px 14px 8px 36px;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .sidebar-search .search-wrapper {
+            position: relative;
+        }
+
+        .sidebar-search .search-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* User list */
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .user-list-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .user-list-item.active {
+            background: rgba(0, 168, 132, 0.15);
+        }
+
+        .user-list-item .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .user-list-item .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-list-item .user-details .name {
+            font-weight: 600;
+            font-size: 0.92rem;
+            margin-bottom: 2px;
+        }
+
+        .user-list-item .user-details .last-msg {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-list-item .meta {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .user-list-item .meta .time {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .user-list-item .meta .unread-badge {
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.68rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+            margin-left: auto;
+        }
+
+        /* "No users yet" placeholder */
+        .no-users-msg {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ---- Chat Window ---- */
+        .chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-darker);
+            position: relative;
+        }
+
+        /* Empty state (no chat selected) */
+        .chat-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            gap: 12px;
+        }
+
+        .chat-empty i {
+            font-size: 4rem;
+            color: var(--border-color);
+        }
+
+        .chat-empty p {
+            font-size: 1rem;
+        }
+
+        /* Chat header */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 18px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            gap: 12px;
+        }
+
+        .chat-header .back-btn {
+            display: none; /* shown on mobile */
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .chat-header .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .chat-header .chat-contact-info {
+            flex: 1;
+        }
+
+        .chat-header .chat-contact-info .name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .chat-header .chat-contact-info .status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .chat-header .chat-actions button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-left: 16px;
+            transition: color 0.2s;
+        }
+
+        .chat-header .chat-actions button:hover {
+            color: var(--text-primary);
+        }
+
+        /* Messages area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 2px;
+        }
+
+        .message-row.outgoing {
+            justify-content: flex-end;
+        }
+
+        .message-row.incoming {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message-row.outgoing .message-bubble {
+            background: var(--msg-outgoing);
+            border-top-right-radius: 2px;
+        }
+
+        .message-row.incoming .message-bubble {
+            background: var(--msg-incoming);
+            border-top-left-radius: 2px;
+        }
+
+        .message-bubble .msg-text {
+            margin-bottom: 4px;
+        }
+
+        .message-bubble .msg-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+        }
+
+        /* Date separator */
+        .date-separator {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .date-separator span {
+            background: var(--bg-panel);
+            padding: 4px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Message composer */
+        .message-composer {
+            display: flex;
+            align-items: center;
+            padding: 10px 18px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+        }
+
+        .message-composer input {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .message-composer button {
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .message-composer button:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ============================================================
+           VIDEO CALL CONTAINER (Floating & Draggable)
+           ============================================================ */
+        .video-call-container {
+            position: fixed;
+            width: 320px;
+            height: 240px;
+            z-index: 1000;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            top: 20px;
+            right: 20px;
+            cursor: grab;
+        }
+
+        .video-call-container.dragging {
+            cursor: grabbing;
+        }
+
+        .video-call-container .video-streams {
+            display: flex;
+            width: 100%;
+            height: calc(100% - 48px);
+        }
+
+        .video-call-container .video-streams .stream {
+            flex: 1;
+            background: #1a1a2e;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-call-container .video-streams .stream video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-call-container .video-streams .stream .stream-label {
+            position: absolute;
+            bottom: 4px;
+            left: 6px;
+            font-size: 0.65rem;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .video-call-container .video-streams .stream .no-video-icon {
+            font-size: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .video-call-controls {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .video-call-controls button {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            color: #fff;
+            background: var(--bg-input);
+        }
+
+        .video-call-controls button:hover {
+            background: var(--border-color);
+        }
+
+        .video-call-controls .btn-end-call {
+            background: var(--danger);
+            width: 44px;
+            height: 36px;
+            border-radius: 18px;
+        }
+
+        .video-call-controls .btn-end-call:hover {
+            background: #dc2626;
+        }
+
+        .video-call-controls .btn-muted {
+            background: var(--danger);
+        }
+
+        /* Incoming call overlay */
+        .incoming-call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .incoming-call-box {
+            background: var(--bg-panel);
+            padding: 32px 40px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .incoming-call-box .caller-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #fff;
+            font-weight: 700;
+            margin: 0 auto 14px;
+        }
+
+        .incoming-call-box .caller-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .incoming-call-box .call-status-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .incoming-call-box .call-action-btns {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .incoming-call-box .call-action-btns button {
+            width: 52px;
+            height: 52px;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .incoming-call-box .btn-accept-call {
+            background: var(--primary);
+        }
+
+        .incoming-call-box .btn-reject-call {
+            background: var(--danger);
+        }
+
+        /* ============================================================
+           RESPONSIVE – Mobile View (width <= 768px)
+           ============================================================ */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+            }
+
+            /* Chat window overlays sidebar on mobile */
+            .chat-window {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 10;
+                /* Hidden by default on mobile; shown when a chat is active */
+                display: none;
+            }
+
+            .chat-window.mobile-active {
+                display: flex;
+            }
+
+            /* Show the back button on mobile */
+            .chat-header .back-btn {
+                display: inline-flex;
+            }
+
+            /* Messages area padding reduced */
+            .messages-container {
+                padding: 12px 16px;
+            }
+
+            .message-bubble {
+                max-width: 82%;
+            }
+
+            /* Video call container docked at top on mobile */
+            .video-call-container {
+                width: 100% !important;
+                height: 50vh !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: auto !important;
+                border-radius: 0;
+                cursor: default;
+            }
+        }
+
+        /* ============================================================
+           MISC ANIMATIONS
+           ============================================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.2s ease;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================================================================
+         AUTH SCREEN – Login & Sign-up Forms
+         ================================================================ -->
+    <div id="auth-screen">
+        <div class="auth-container">
+            <h1><i class="fa-solid fa-comments"></i> Messenger</h1>
+            <p class="subtitle">Sign in to start messaging</p>
+
+            <!-- Error display -->
+            <div id="auth-error" class="auth-error hidden"></div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" required />
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Your password" required />
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fa-solid fa-right-to-bracket"></i> Log In
+                </button>
+            </form>
+
+            <!-- Sign-up Form (hidden by default) -->
+            <form id="signup-form" class="hidden">
+                <div class="form-group">
+                    <label for="signup-name">Display Name</label>
+                    <input type="text" id="signup-name" placeholder="Your name" required />
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="you@example.com" required />
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Min 6 characters" required />
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <!-- Toggle between Login / Sign-up -->
+            <p class="toggle-text" id="toggle-signup">
+                Don't have an account? <a id="show-signup">Sign up</a>
+            </p>
+            <p class="toggle-text hidden" id="toggle-login">
+                Already have an account? <a id="show-login">Log in</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         DASHBOARD SCREEN – Sidebar + Chat Window
+         ================================================================ -->
+    <div id="dashboard-screen" class="hidden">
+
+        <!-- ---- Sidebar ---- -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div class="avatar-sm" id="sidebar-avatar"></div>
+                    <span id="sidebar-username">User</span>
+                </div>
+                <div class="header-actions">
+                    <button title="Sign Out" id="btn-signout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-search">
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Search users…" />
+                </div>
+            </div>
+
+            <div class="user-list" id="user-list">
+                <div class="no-users-msg" id="no-users-placeholder">
+                    <i class="fa-solid fa-users"></i>
+                    <p>No other users yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- Chat Window ---- -->
+        <div class="chat-window" id="chat-window">
+
+            <!-- Empty state -->
+            <div class="chat-empty" id="chat-empty">
+                <i class="fa-solid fa-comment-dots"></i>
+                <p>Select a conversation to start messaging</p>
+            </div>
+
+            <!-- Active chat (hidden until a user is selected) -->
+            <div id="chat-active" class="hidden" style="display:none; flex-direction:column; height:100%;">
+
+                <!-- Chat header -->
+                <div class="chat-header">
+                    <button class="back-btn" id="btn-back" title="Back">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div class="avatar" id="chat-avatar"></div>
+                    <div class="chat-contact-info">
+                        <div class="name" id="chat-contact-name">Contact</div>
+                        <div class="status" id="chat-contact-status">Online</div>
+                    </div>
+                    <div class="chat-actions">
+                        <button title="Video Call" id="btn-video-call">
+                            <i class="fa-solid fa-video"></i>
+                        </button>
+                        <button title="Voice Call" id="btn-voice-call">
+                            <i class="fa-solid fa-phone"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="messages-container" id="messages-container"></div>
+
+                <!-- Composer -->
+                <div class="message-composer">
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Type a message…"
+                        autocomplete="off"
+                    />
+                    <button id="btn-send" title="Send">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         VIDEO CALL FLOATING CONTAINER (hidden by default)
+         ================================================================ -->
+    <div class="video-call-container hidden" id="video-call-container">
+        <div class="video-streams">
+            <div class="stream" id="local-stream">
+                <i class="fa-solid fa-user no-video-icon" id="local-no-video"></i>
+                <span class="stream-label">You</span>
+            </div>
+            <div class="stream" id="remote-stream">
+                <i class="fa-solid fa-user no-video-icon" id="remote-no-video"></i>
+                <span class="stream-label" id="remote-stream-label">Remote</span>
+            </div>
+        </div>
+        <div class="video-call-controls">
+            <button id="btn-toggle-mic" title="Toggle Microphone">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button id="btn-toggle-camera" title="Toggle Camera">
+                <i class="fa-solid fa-video"></i>
+            </button>
+            <button class="btn-end-call" id="btn-end-call" title="End Call">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         INCOMING CALL OVERLAY (hidden by default)
+         ================================================================ -->
+    <div class="incoming-call-overlay hidden" id="incoming-call-overlay">
+        <div class="incoming-call-box">
+            <div class="caller-avatar" id="caller-avatar"></div>
+            <div class="caller-name" id="caller-name">Unknown</div>
+            <div class="call-status-text">Incoming video call…</div>
+            <div class="call-action-btns">
+                <button class="btn-reject-call" id="btn-reject-incoming" title="Decline">
+                    <i class="fa-solid fa-phone-slash"></i>
+                </button>
+                <button class="btn-accept-call" id="btn-accept-incoming" title="Accept">
+                    <i class="fa-solid fa-phone"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==============================================================
+         SCRIPTS
+         ============================================================== -->
+
+    <!-- Firebase SDK 9.0.0 (compat builds for CDN usage with modular API) -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    <!-- Agora RTC SDK 4.x via CDN -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.0.0.js"></script>
+
+    <script>
+        /* ============================================================
+           CONFIGURATION
+           ============================================================ */
+
+        /**
+         * Firebase project configuration.
+         * Replace the placeholder values below with your own Firebase
+         * project credentials from the Firebase Console.
+         */
+        const firebaseConfig = {
+            /* INSERT FIREBASE CONFIG HERE */
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        /**
+         * Agora App ID for real-time video calling.
+         * Get yours from https://console.agora.io
+         */
+        /* INSERT AGORA APP ID HERE */
+        const AGORA_APP_ID = "";
+
+        /* ============================================================
+           FIREBASE INITIALISATION
+           ============================================================ */
+
+        // Validate that Firebase config has been provided
+        if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+            alert(
+                "Firebase configuration is missing!\n\n" +
+                "Open index.html and fill in the firebaseConfig object " +
+                "with your Firebase project credentials."
+            );
+        }
+
+        // Validate Agora App ID
+        if (!AGORA_APP_ID) {
+            alert(
+                "Agora App ID is missing!\n\n" +
+                "Open index.html and set the AGORA_APP_ID constant " +
+                "with your Agora project App ID."
+            );
+        }
+
+        // Initialise Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db   = firebase.firestore();
+
+        /* ============================================================
+           DOM REFERENCES
+           ============================================================ */
+
+        // Auth screen
+        const authScreen      = document.getElementById("auth-screen");
+        const loginForm       = document.getElementById("login-form");
+        const signupForm      = document.getElementById("signup-form");
+        const loginEmail      = document.getElementById("login-email");
+        const loginPassword   = document.getElementById("login-password");
+        const signupName      = document.getElementById("signup-name");
+        const signupEmail     = document.getElementById("signup-email");
+        const signupPassword  = document.getElementById("signup-password");
+        const authError       = document.getElementById("auth-error");
+        const toggleSignup    = document.getElementById("toggle-signup");
+        const toggleLogin     = document.getElementById("toggle-login");
+        const showSignupLink  = document.getElementById("show-signup");
+        const showLoginLink   = document.getElementById("show-login");
+
+        // Dashboard
+        const dashboardScreen    = document.getElementById("dashboard-screen");
+        const sidebarAvatar      = document.getElementById("sidebar-avatar");
+        const sidebarUsername    = document.getElementById("sidebar-username");
+        const btnSignout         = document.getElementById("btn-signout");
+        const searchInput        = document.getElementById("search-input");
+        const userListEl         = document.getElementById("user-list");
+        const noUsersPlaceholder = document.getElementById("no-users-placeholder");
+
+        // Chat
+        const chatWindow         = document.getElementById("chat-window");
+        const chatEmpty          = document.getElementById("chat-empty");
+        const chatActive         = document.getElementById("chat-active");
+        const chatAvatar         = document.getElementById("chat-avatar");
+        const chatContactName    = document.getElementById("chat-contact-name");
+        const chatContactStatus  = document.getElementById("chat-contact-status");
+        const messagesContainer  = document.getElementById("messages-container");
+        const messageInput       = document.getElementById("message-input");
+        const btnSend            = document.getElementById("btn-send");
+        const btnBack            = document.getElementById("btn-back");
+        const btnVideoCall       = document.getElementById("btn-video-call");
+        const btnVoiceCall       = document.getElementById("btn-voice-call");
+
+        // Video call
+        const videoCallContainer = document.getElementById("video-call-container");
+        const localStreamEl      = document.getElementById("local-stream");
+        const remoteStreamEl     = document.getElementById("remote-stream");
+        const localNoVideo       = document.getElementById("local-no-video");
+        const remoteNoVideo      = document.getElementById("remote-no-video");
+        const remoteStreamLabel  = document.getElementById("remote-stream-label");
+        const btnToggleMic       = document.getElementById("btn-toggle-mic");
+        const btnToggleCamera    = document.getElementById("btn-toggle-camera");
+        const btnEndCall         = document.getElementById("btn-end-call");
+
+        // Incoming call overlay
+        const incomingCallOverlay = document.getElementById("incoming-call-overlay");
+        const callerAvatar        = document.getElementById("caller-avatar");
+        const callerNameEl        = document.getElementById("caller-name");
+        const btnAcceptIncoming   = document.getElementById("btn-accept-incoming");
+        const btnRejectIncoming   = document.getElementById("btn-reject-incoming");
+
+        /* ============================================================
+           APP STATE
+           ============================================================ */
+
+        let currentUser  = null; // Firebase auth user enriched with displayName
+        let selectedChat = null; // { uid, displayName, email }
+        let usersMap     = {};   // uid → user data from Firestore 'users' collection
+        let messagesUnsubscribe = null; // Firestore snapshot listener for messages
+
+        /* ============================================================
+           HELPER FUNCTIONS
+           ============================================================ */
+
+        /**
+         * Returns the initial letter(s) of a name for use as avatar text.
+         */
+        function getInitials(name) {
+            if (!name) return "?";
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return parts[0][0].toUpperCase();
+        }
+
+        /**
+         * Builds a deterministic conversation ID from two user UIDs.
+         * Sorting ensures both participants derive the same ID.
+         */
+        function getConversationId(uid1, uid2) {
+            return [uid1, uid2].sort().join("_");
+        }
+
+        /**
+         * Formats a Firestore Timestamp into a short time string (HH:MM).
+         */
+        function formatTime(timestamp) {
+            if (!timestamp) return "";
+            const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        /**
+         * Shows an error message on the auth screen.
+         */
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.classList.remove("hidden");
+        }
+
+        /**
+         * Hides the auth error message.
+         */
+        function hideAuthError() {
+            authError.classList.add("hidden");
+            authError.textContent = "";
+        }
+
+        /**
+         * Checks if we are currently in mobile viewport.
+         */
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        /* ============================================================
+           AUTH – Toggle between Login and Sign‑up
+           ============================================================ */
+
+        showSignupLink.addEventListener("click", () => {
+            loginForm.classList.add("hidden");
+            signupForm.classList.remove("hidden");
+            toggleSignup.classList.add("hidden");
+            toggleLogin.classList.remove("hidden");
+            hideAuthError();
+        });
+
+        showLoginLink.addEventListener("click", () => {
+            signupForm.classList.add("hidden");
+            loginForm.classList.remove("hidden");
+            toggleLogin.classList.add("hidden");
+            toggleSignup.classList.remove("hidden");
+            hideAuthError();
+        });
+
+        /* ============================================================
+           AUTH – Login
+           ============================================================ */
+
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideAuthError();
+
+            const email    = loginEmail.value.trim();
+            const password = loginPassword.value;
+
+            if (!email || !password) {
+                showAuthError("Please fill in all fields.");
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // onAuthStateChanged will handle the rest
+            } catch (err) {
+                showAuthError(mapAuthError(err.code));
+            }
+        });
+
+        /* ============================================================
+           AUTH – Sign‑up
+           ============================================================ */
+
+        signupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideAuthError();
+
+            const name     = signupName.value.trim();
+            const email    = signupEmail.value.trim();
+            const password = signupPassword.value;
+
+            if (!name || !email || !password) {
+                showAuthError("Please fill in all fields.");
+                return;
+            }
+
+            if (password.length < 6) {
+                showAuthError("Password must be at least 6 characters.");
+                return;
+            }
+
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+
+                // Update the Firebase Auth profile with displayName
+                await cred.user.updateProfile({ displayName: name });
+
+                // Store user in Firestore 'users' collection
+                await db.collection("users").doc(cred.user.uid).set({
+                    uid: cred.user.uid,
+                    displayName: name,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // onAuthStateChanged will handle the rest
+            } catch (err) {
+                showAuthError(mapAuthError(err.code));
+            }
+        });
+
+        /**
+         * Maps Firebase Auth error codes to user‑friendly messages.
+         */
+        function mapAuthError(code) {
+            const map = {
+                "auth/email-already-in-use": "This email is already registered.",
+                "auth/invalid-email": "Please enter a valid email address.",
+                "auth/user-not-found": "No account found with this email.",
+                "auth/wrong-password": "Incorrect password. Please try again.",
+                "auth/weak-password": "Password must be at least 6 characters.",
+                "auth/too-many-requests": "Too many attempts. Try again later.",
+                "auth/network-request-failed": "Network error. Check your connection."
+            };
+            return map[code] || "An unexpected error occurred. Please try again.";
+        }
+
+        /* ============================================================
+           AUTH – Sign Out
+           ============================================================ */
+
+        btnSignout.addEventListener("click", async () => {
+            try {
+                // Clean up call state if needed
+                await endCall();
+                // Set user offline
+                if (currentUser) {
+                    await db.collection("users").doc(currentUser.uid).update({
+                        online: false
+                    });
+                }
+                await auth.signOut();
+            } catch (err) {
+                console.error("Sign-out error:", err);
+            }
+        });
+
+        /* ============================================================
+           AUTH STATE OBSERVER
+           ============================================================ */
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // User is signed in
+                currentUser = user;
+
+                // Update presence
+                await db.collection("users").doc(user.uid).set({
+                    uid: user.uid,
+                    displayName: user.displayName || user.email.split("@")[0],
+                    email: user.email,
+                    online: true,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                // Show dashboard
+                showDashboard();
+
+                // Listen for user list updates
+                listenToUsers();
+
+                // Listen for incoming calls
+                listenForIncomingCalls();
+            } else {
+                // User is signed out
+                currentUser  = null;
+                selectedChat = null;
+                if (messagesUnsubscribe) messagesUnsubscribe();
+
+                // Show auth screen
+                showAuthScreen();
+            }
+        });
+
+        /* ============================================================
+           STATE TRANSITIONS – Auth ↔ Dashboard
+           ============================================================ */
+
+        function showAuthScreen() {
+            authScreen.classList.remove("hidden");
+            dashboardScreen.classList.add("hidden");
+            videoCallContainer.classList.add("hidden");
+            incomingCallOverlay.classList.add("hidden");
+        }
+
+        function showDashboard() {
+            authScreen.classList.add("hidden");
+            dashboardScreen.classList.remove("hidden");
+
+            // Populate sidebar header
+            const name = currentUser.displayName || currentUser.email.split("@")[0];
+            sidebarAvatar.textContent   = getInitials(name);
+            sidebarUsername.textContent  = name;
+        }
+
+        /* ============================================================
+           USERS LIST – Real‑time listener
+           ============================================================ */
+
+        function listenToUsers() {
+            db.collection("users")
+                .orderBy("displayName")
+                .onSnapshot((snapshot) => {
+                    usersMap = {};
+                    snapshot.forEach((doc) => {
+                        usersMap[doc.id] = doc.data();
+                    });
+                    renderUserList();
+                }, (err) => {
+                    console.error("Error listening to users:", err);
+                });
+        }
+
+        /**
+         * Renders the user list in the sidebar, excluding the current user.
+         * Supports filtering via the search input.
+         */
+        function renderUserList() {
+            const query = searchInput.value.trim().toLowerCase();
+
+            // Filter out current user and apply search
+            const users = Object.values(usersMap).filter((u) => {
+                if (u.uid === currentUser.uid) return false;
+                if (query && !u.displayName.toLowerCase().includes(query) &&
+                    !u.email.toLowerCase().includes(query)) {
+                    return false;
+                }
+                return true;
+            });
+
+            // Clear list (except placeholder)
+            userListEl.querySelectorAll(".user-list-item").forEach((el) => el.remove());
+
+            if (users.length === 0) {
+                noUsersPlaceholder.classList.remove("hidden");
+            } else {
+                noUsersPlaceholder.classList.add("hidden");
+            }
+
+            users.forEach((user) => {
+                const item = document.createElement("div");
+                item.className = "user-list-item fade-in";
+                if (selectedChat && selectedChat.uid === user.uid) {
+                    item.classList.add("active");
+                }
+
+                const onlineIndicator = user.online
+                    ? '<span style="color: var(--primary); font-size:0.7rem;">● </span>'
+                    : '';
+
+                item.innerHTML = `
+                    <div class="avatar">${getInitials(user.displayName)}</div>
+                    <div class="user-details">
+                        <div class="name">${onlineIndicator}${escapeHtml(user.displayName)}</div>
+                        <div class="last-msg">${escapeHtml(user.email)}</div>
+                    </div>
+                `;
+
+                item.addEventListener("click", () => openChat(user));
+                userListEl.appendChild(item);
+            });
+        }
+
+        /**
+         * Escapes HTML entities to prevent XSS.
+         */
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Re-render on search
+        searchInput.addEventListener("input", renderUserList);
+
+        /* ============================================================
+           CHAT – Open a conversation
+           ============================================================ */
+
+        function openChat(user) {
+            selectedChat = user;
+
+            // Update UI
+            chatEmpty.style.display  = "none";
+            chatActive.classList.remove("hidden");
+            chatActive.style.display = "flex";
+
+            chatAvatar.textContent      = getInitials(user.displayName);
+            chatContactName.textContent = user.displayName;
+            chatContactStatus.textContent = user.online ? "Online" : "Offline";
+
+            // On mobile, slide the chat window into view
+            if (isMobile()) {
+                chatWindow.classList.add("mobile-active");
+            }
+
+            // Re-render user list to highlight active
+            renderUserList();
+
+            // Listen to messages for this conversation
+            listenToMessages();
+
+            // Focus the input
+            messageInput.focus();
+        }
+
+        /* ============================================================
+           CHAT – Back button (mobile)
+           ============================================================ */
+
+        btnBack.addEventListener("click", () => {
+            chatWindow.classList.remove("mobile-active");
+            selectedChat = null;
+            renderUserList();
+        });
+
+        /* ============================================================
+           MESSAGES – Real‑time listener
+           ============================================================ */
+
+        function listenToMessages() {
+            // Unsubscribe from previous listener
+            if (messagesUnsubscribe) messagesUnsubscribe();
+
+            const convId = getConversationId(currentUser.uid, selectedChat.uid);
+
+            messagesUnsubscribe = db
+                .collection("messages")
+                .where("conversationId", "==", convId)
+                .orderBy("timestamp", "asc")
+                .onSnapshot((snapshot) => {
+                    messagesContainer.innerHTML = "";
+                    let lastDate = "";
+
+                    snapshot.forEach((doc) => {
+                        const msg = doc.data();
+
+                        // Date separator
+                        if (msg.timestamp) {
+                            const msgDate = msg.timestamp.toDate().toLocaleDateString();
+                            if (msgDate !== lastDate) {
+                                lastDate = msgDate;
+                                const sep = document.createElement("div");
+                                sep.className = "date-separator";
+                                sep.innerHTML = `<span>${msgDate}</span>`;
+                                messagesContainer.appendChild(sep);
+                            }
+                        }
+
+                        // Message bubble
+                        const row = document.createElement("div");
+                        const isOutgoing = msg.senderId === currentUser.uid;
+                        row.className = `message-row ${isOutgoing ? "outgoing" : "incoming"} fade-in`;
+
+                        row.innerHTML = `
+                            <div class="message-bubble">
+                                <div class="msg-text">${escapeHtml(msg.text)}</div>
+                                <div class="msg-meta">
+                                    <span>${formatTime(msg.timestamp)}</span>
+                                    ${isOutgoing ? '<i class="fa-solid fa-check-double" style="color:var(--primary);font-size:0.7rem;"></i>' : ""}
+                                </div>
+                            </div>
+                        `;
+
+                        messagesContainer.appendChild(row);
+                    });
+
+                    // Scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, (err) => {
+                    console.error("Error listening to messages:", err);
+                });
+        }
+
+        /* ============================================================
+           MESSAGES – Send
+           ============================================================ */
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !selectedChat) return;
+
+            messageInput.value = "";
+
+            const convId = getConversationId(currentUser.uid, selectedChat.uid);
+
+            try {
+                await db.collection("messages").add({
+                    conversationId: convId,
+                    senderId: currentUser.uid,
+                    receiverId: selectedChat.uid,
+                    text: text,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (err) {
+                console.error("Error sending message:", err);
+                // Restore text if send fails
+                messageInput.value = text;
+            }
+        }
+
+        btnSend.addEventListener("click", sendMessage);
+
+        // Send on Enter key
+        messageInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        /* ============================================================
+           AGORA VIDEO CALLING
+           ============================================================ */
+
+        let agoraClient    = null;
+        let localAudioTrack = null;
+        let localVideoTrack = null;
+        let isMicMuted     = false;
+        let isCamOff       = false;
+        let currentCallDocId = null; // Firestore document tracking the active call
+
+        /**
+         * Initiates a video call to the currently selected chat user.
+         * Creates an Agora channel named after the conversation ID,
+         * and writes a "call" document to Firestore so the remote
+         * user can be notified.
+         */
+        async function startCall(audioOnly = false) {
+            if (!AGORA_APP_ID) {
+                alert("Agora App ID is not configured. Cannot start call.");
+                return;
+            }
+            if (!selectedChat) return;
+
+            const convId = getConversationId(currentUser.uid, selectedChat.uid);
+
+            try {
+                // Create Agora client
+                agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+                // Join the channel (no token for testing; use tokens in production)
+                await agoraClient.join(AGORA_APP_ID, convId, null, currentUser.uid);
+
+                // Create local audio track
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+
+                if (!audioOnly) {
+                    // Create local video track
+                    localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+                    localVideoTrack.play(localStreamEl);
+                    localNoVideo.classList.add("hidden");
+                }
+
+                // Publish tracks
+                const tracks = [localAudioTrack];
+                if (localVideoTrack) tracks.push(localVideoTrack);
+                await agoraClient.publish(tracks);
+
+                // Show the floating video container
+                videoCallContainer.classList.remove("hidden");
+
+                // Listen for remote user
+                setupAgoraListeners();
+
+                // Write a call document to Firestore for the remote user
+                const callRef = await db.collection("calls").add({
+                    callerId: currentUser.uid,
+                    callerName: currentUser.displayName || currentUser.email,
+                    receiverId: selectedChat.uid,
+                    channelName: convId,
+                    audioOnly: audioOnly,
+                    status: "ringing",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                currentCallDocId = callRef.id;
+
+                // Listen for call status changes (e.g. rejected)
+                callRef.onSnapshot((snap) => {
+                    const data = snap.data();
+                    if (data && data.status === "rejected") {
+                        alert("Call was declined.");
+                        endCall();
+                    }
+                });
+
+                // Reset mute/cam states
+                isMicMuted = false;
+                isCamOff   = audioOnly;
+                updateCallControls();
+
+            } catch (err) {
+                console.error("Error starting call:", err);
+                alert("Failed to start call: " + err.message);
+                await endCall();
+            }
+        }
+
+        /**
+         * Sets up event listeners on the Agora client for remote
+         * user published / unpublished / left events.
+         */
+        function setupAgoraListeners() {
+            if (!agoraClient) return;
+
+            agoraClient.on("user-published", async (remoteUser, mediaType) => {
+                await agoraClient.subscribe(remoteUser, mediaType);
+
+                if (mediaType === "video") {
+                    remoteNoVideo.classList.add("hidden");
+                    remoteUser.videoTrack.play(remoteStreamEl);
+                }
+
+                if (mediaType === "audio") {
+                    remoteUser.audioTrack.play();
+                }
+
+                // Update label
+                const remoteName = usersMap[remoteUser.uid]
+                    ? usersMap[remoteUser.uid].displayName
+                    : "Remote";
+                remoteStreamLabel.textContent = remoteName;
+            });
+
+            agoraClient.on("user-unpublished", (remoteUser, mediaType) => {
+                if (mediaType === "video") {
+                    remoteNoVideo.classList.remove("hidden");
+                }
+            });
+
+            agoraClient.on("user-left", () => {
+                remoteNoVideo.classList.remove("hidden");
+                endCall();
+            });
+        }
+
+        /**
+         * Ends the current call and cleans up all Agora resources.
+         */
+        async function endCall() {
+            // Close local tracks
+            if (localAudioTrack) {
+                localAudioTrack.close();
+                localAudioTrack = null;
+            }
+            if (localVideoTrack) {
+                localVideoTrack.close();
+                localVideoTrack = null;
+            }
+
+            // Leave channel
+            if (agoraClient) {
+                await agoraClient.leave().catch(() => {});
+                agoraClient = null;
+            }
+
+            // Update Firestore call doc
+            if (currentCallDocId) {
+                try {
+                    await db.collection("calls").doc(currentCallDocId).update({
+                        status: "ended"
+                    });
+                } catch (_) { /* ignore */ }
+                currentCallDocId = null;
+            }
+
+            // Hide video container
+            videoCallContainer.classList.add("hidden");
+            localNoVideo.classList.remove("hidden");
+            remoteNoVideo.classList.remove("hidden");
+
+            // Clear any video elements that Agora injected
+            localStreamEl.querySelectorAll("div[id^='agora']").forEach((el) => el.remove());
+            remoteStreamEl.querySelectorAll("div[id^='agora']").forEach((el) => el.remove());
+
+            isMicMuted = false;
+            isCamOff   = false;
+            updateCallControls();
+        }
+
+        /**
+         * Updates the mute/camera button visuals.
+         */
+        function updateCallControls() {
+            // Mic button
+            const micIcon = btnToggleMic.querySelector("i");
+            if (isMicMuted) {
+                micIcon.className = "fa-solid fa-microphone-slash";
+                btnToggleMic.classList.add("btn-muted");
+            } else {
+                micIcon.className = "fa-solid fa-microphone";
+                btnToggleMic.classList.remove("btn-muted");
+            }
+
+            // Camera button
+            const camIcon = btnToggleCamera.querySelector("i");
+            if (isCamOff) {
+                camIcon.className = "fa-solid fa-video-slash";
+                btnToggleCamera.classList.add("btn-muted");
+            } else {
+                camIcon.className = "fa-solid fa-video";
+                btnToggleCamera.classList.remove("btn-muted");
+            }
+        }
+
+        // Toggle microphone
+        btnToggleMic.addEventListener("click", async () => {
+            if (!localAudioTrack) return;
+            isMicMuted = !isMicMuted;
+            await localAudioTrack.setEnabled(!isMicMuted);
+            updateCallControls();
+        });
+
+        // Toggle camera
+        btnToggleCamera.addEventListener("click", async () => {
+            if (!localVideoTrack) return;
+            isCamOff = !isCamOff;
+            await localVideoTrack.setEnabled(!isCamOff);
+            if (isCamOff) {
+                localNoVideo.classList.remove("hidden");
+            } else {
+                localNoVideo.classList.add("hidden");
+            }
+            updateCallControls();
+        });
+
+        // End call button
+        btnEndCall.addEventListener("click", endCall);
+
+        // Video call button (in chat header)
+        btnVideoCall.addEventListener("click", () => startCall(false));
+
+        // Voice call button (in chat header)
+        btnVoiceCall.addEventListener("click", () => startCall(true));
+
+        /* ============================================================
+           INCOMING CALLS – Firestore listener
+           ============================================================ */
+
+        let incomingCallUnsubscribe = null;
+
+        /**
+         * Listens for incoming call documents in Firestore where
+         * the current user is the receiver and the status is "ringing".
+         */
+        function listenForIncomingCalls() {
+            if (incomingCallUnsubscribe) incomingCallUnsubscribe();
+
+            incomingCallUnsubscribe = db.collection("calls")
+                .where("receiverId", "==", currentUser.uid)
+                .where("status", "==", "ringing")
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const call = change.doc.data();
+                            showIncomingCall(change.doc.id, call);
+                        }
+                    });
+                });
+        }
+
+        /**
+         * Displays the incoming call overlay with caller info
+         * and accept/reject buttons.
+         */
+        function showIncomingCall(callDocId, callData) {
+            callerAvatar.textContent   = getInitials(callData.callerName);
+            callerNameEl.textContent   = callData.callerName;
+            incomingCallOverlay.classList.remove("hidden");
+
+            // Accept handler
+            const acceptHandler = async () => {
+                incomingCallOverlay.classList.add("hidden");
+                cleanup();
+
+                // Update call status
+                await db.collection("calls").doc(callDocId).update({
+                    status: "accepted"
+                });
+
+                currentCallDocId = callDocId;
+
+                // Join the Agora channel
+                try {
+                    agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+                    await agoraClient.join(
+                        AGORA_APP_ID,
+                        callData.channelName,
+                        null,
+                        currentUser.uid
+                    );
+
+                    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+
+                    if (!callData.audioOnly) {
+                        localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+                        localVideoTrack.play(localStreamEl);
+                        localNoVideo.classList.add("hidden");
+                    }
+
+                    const tracks = [localAudioTrack];
+                    if (localVideoTrack) tracks.push(localVideoTrack);
+                    await agoraClient.publish(tracks);
+
+                    videoCallContainer.classList.remove("hidden");
+                    setupAgoraListeners();
+
+                    isMicMuted = false;
+                    isCamOff   = callData.audioOnly;
+                    updateCallControls();
+
+                } catch (err) {
+                    console.error("Error joining call:", err);
+                    alert("Failed to join call: " + err.message);
+                    await endCall();
+                }
+            };
+
+            // Reject handler
+            const rejectHandler = async () => {
+                incomingCallOverlay.classList.add("hidden");
+                cleanup();
+
+                await db.collection("calls").doc(callDocId).update({
+                    status: "rejected"
+                });
+            };
+
+            function cleanup() {
+                btnAcceptIncoming.removeEventListener("click", acceptHandler);
+                btnRejectIncoming.removeEventListener("click", rejectHandler);
+            }
+
+            btnAcceptIncoming.addEventListener("click", acceptHandler);
+            btnRejectIncoming.addEventListener("click", rejectHandler);
+        }
+
+        /* ============================================================
+           DRAGGABLE VIDEO CALL CONTAINER (Desktop only)
+           ============================================================ */
+
+        (function initDraggable() {
+            let isDragging = false;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            videoCallContainer.addEventListener("mousedown", (e) => {
+                // Only allow drag from the top area or non-interactive elements
+                if (e.target.closest("button") || e.target.closest("video")) return;
+                if (isMobile()) return; // disable drag on mobile
+
+                isDragging = true;
+                offsetX = e.clientX - videoCallContainer.getBoundingClientRect().left;
+                offsetY = e.clientY - videoCallContainer.getBoundingClientRect().top;
+                videoCallContainer.classList.add("dragging");
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+
+                let newX = e.clientX - offsetX;
+                let newY = e.clientY - offsetY;
+
+                // Clamp to viewport
+                const maxX = window.innerWidth - videoCallContainer.offsetWidth;
+                const maxY = window.innerHeight - videoCallContainer.offsetHeight;
+                newX = Math.max(0, Math.min(newX, maxX));
+                newY = Math.max(0, Math.min(newY, maxY));
+
+                videoCallContainer.style.left  = newX + "px";
+                videoCallContainer.style.top   = newY + "px";
+                videoCallContainer.style.right = "auto";
+            });
+
+            document.addEventListener("mouseup", () => {
+                isDragging = false;
+                videoCallContainer.classList.remove("dragging");
+            });
+        })();
+
+        /* ============================================================
+           WINDOW CLEANUP – set user offline on close
+           ============================================================ */
+
+        window.addEventListener("beforeunload", () => {
+            if (currentUser) {
+                // Use navigator.sendBeacon for reliable offline status update
+                const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/users/${currentUser.uid}?updateMask.fieldPaths=online&updateMask.fieldPaths=lastSeen`;
+                // Fallback: simply set via Firestore (may not always complete)
+                db.collection("users").doc(currentUser.uid).update({
+                    online: false,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(() => {});
+            }
+        });
+
+        /* ============================================================
+           INITIALISATION COMPLETE
+           ============================================================ */
+        console.log(
+            "%c Messenger App Loaded ",
+            "background:#00a884;color:#fff;padding:4px 8px;border-radius:4px;font-weight:bold;"
+        );
+    </script>
+</body>
+</html>
